@@ -119,6 +119,21 @@ export async function POST(request: Request) {
       )
     }
 
+    // Render template body for DB storage
+    const { data: templateRecord } = await supabase
+      .from('message_templates')
+      .select('body_text')
+      .eq('user_id', user.id)
+      .eq('name', template_name)
+      .maybeSingle()
+
+    const templateBody = templateRecord?.body_text ?? ''
+    const renderedBody = templateBody.replace(/\{\{(\d+)\}\}/g, (_match: string, raw: string) => {
+      const idx = Number(raw) - 1
+      const value = template_params?.[idx]
+      return value && value.trim().length > 0 ? value : `{{${raw}}}`
+    })
+
     // Send template via Meta API with phone variant retry
     let waMessageId = ''
     let workingPhone = sanitizedPhone
@@ -181,7 +196,7 @@ export async function POST(request: Request) {
         conversation_id: conversationId,
         sender_type: 'agent',
         content_type: 'template',
-        content_text: null,
+        content_text: renderedBody,
         template_name: template_name,
         message_id: waMessageId,
         status: 'sent',

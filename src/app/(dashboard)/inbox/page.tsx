@@ -150,6 +150,7 @@ export default function InboxPage() {
   const handleMessageEvent = useCallback(
     (event: { eventType: string; new: Message; old: Partial<Message> }) => {
       const newMsg = event.new;
+      console.log('[realtime] message event:', event.eventType, 'conv:', newMsg.conversation_id, 'active:', activeConversation?.id, 'sender:', newMsg.sender_type);
 
       if (event.eventType === "INSERT") {
         // Add to messages if it belongs to active conversation
@@ -157,6 +158,7 @@ export default function InboxPage() {
           activeConversation &&
           newMsg.conversation_id === activeConversation.id
         ) {
+          console.log('[realtime] adding message to thread');
           setMessages((prev) => {
             // Avoid duplicates
             if (prev.some((m) => m.id === newMsg.id)) return prev;
@@ -166,6 +168,8 @@ export default function InboxPage() {
             );
             return [...withoutOptimistic, newMsg];
           });
+        } else {
+          console.log('[realtime] message not for active conversation, skipping thread update');
         }
 
         // Update conversation list preview. We need to know *synchronously*
