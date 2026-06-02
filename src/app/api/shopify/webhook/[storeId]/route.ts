@@ -38,6 +38,7 @@ interface ShopifyOrderPayload {
   order_number?: number
   name?: string // e.g. "#1001"
   total_price?: string
+  total_line_items_price?: string
   currency?: string
   financial_status?: string
   customer?: ShopifyCustomer
@@ -57,6 +58,9 @@ interface ShopifyOrderPayload {
     zip?: string
     phone?: string
   }
+  billing_address?: {
+    phone?: string
+  }
 }
 
 // ============================================================
@@ -67,6 +71,7 @@ interface ExtractedOrderData {
   order_number: string
   customer_name: string
   total_price: string
+  total_price_original: string
   currency: string
   item_count: string
   tracking_number: string
@@ -76,6 +81,17 @@ interface ExtractedOrderData {
   shipping_address: string
   shipping_city: string
 
+}
+
+function extractPhoneWithCountryCode(phone: string): string {
+  if (!phone) return ''
+  // Remove all non-digit characters
+  const digitsOnly = phone.replace(/\D/g, '')
+  // Extract last 10 digits
+  const last10 = digitsOnly.slice(-10)
+  if (last10.length !== 10) return ''
+  // Prepend Pakistan country code
+  return `92${last10}`
 }
 
 function extractOrderData(payload: ShopifyOrderPayload, topic: string): ExtractedOrderData {
@@ -109,11 +125,14 @@ function extractOrderData(payload: ShopifyOrderPayload, topic: string): Extracte
     order_number: payload.name ?? `#${payload.order_number ?? ''}`,
     customer_name: customerName,
     total_price: payload.total_price ?? '0',
+    total_price_original: payload.total_line_items_price ?? payload.total_price ?? '0',
     currency: payload.currency ?? 'USD',
     item_count: itemCount,
     tracking_number: trackingNumber,
     financial_status: payload.financial_status ?? (topic === 'orders/fulfilled' ? 'fulfilled' : ''),
-    customer_phone: customer.phone ?? '',
+    customer_phone: extractPhoneWithCountryCode(
+      customer.phone ?? payload.shipping_address?.phone ?? payload.billing_address?.phone ?? '',
+    ),
     product_details: productDetails,
     shipping_address: fullAddress,
     shipping_city: addr.city ?? '',

@@ -236,6 +236,7 @@ export interface ShopifyVariableMapping {
   source:
     | 'order_number'
     | 'total_price'
+    | 'total_price_original'
     | 'customer_name'
     | 'currency'
     | 'item_count'

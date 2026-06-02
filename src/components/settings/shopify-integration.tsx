@@ -71,7 +71,8 @@ import type {
 const ORDER_FIELDS: { value: ShopifyVariableMapping['source']; label: string }[] = [
   { value: 'order_number', label: 'Order Number' },
   { value: 'customer_name', label: 'Customer Name' },
-  { value: 'total_price', label: 'Total Price' },
+  { value: 'total_price', label: 'Total Price (after discounts)' },
+  { value: 'total_price_original', label: 'Total Price (before discounts)' },
   { value: 'currency', label: 'Currency' },
   { value: 'item_count', label: 'Item Count' },
   { value: 'tracking_number', label: 'Tracking Number' },
