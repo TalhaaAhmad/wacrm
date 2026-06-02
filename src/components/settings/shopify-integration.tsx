@@ -76,6 +76,10 @@ const ORDER_FIELDS: { value: ShopifyVariableMapping['source']; label: string }[]
   { value: 'item_count', label: 'Item Count' },
   { value: 'tracking_number', label: 'Tracking Number' },
   { value: 'financial_status', label: 'Financial Status' },
+  { value: 'product_details', label: 'Product Details' },
+  { value: 'shipping_address', label: 'Shipping Address' },
+  { value: 'shipping_city', label: 'Shipping City' },
+
 ];
 
 const EVENT_TYPES = [

@@ -240,7 +240,11 @@ export interface ShopifyVariableMapping {
     | 'currency'
     | 'item_count'
     | 'tracking_number'
-    | 'financial_status';
+    | 'financial_status'
+    | 'product_details'
+    | 'shipping_address'
+    | 'shipping_city'
+    ;
 }
 
 export type ShopifyWebhookLogStatus = 'processed' | 'failed' | 'skipped';

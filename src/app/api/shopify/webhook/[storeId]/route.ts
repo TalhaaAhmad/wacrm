@@ -41,8 +41,22 @@ interface ShopifyOrderPayload {
   currency?: string
   financial_status?: string
   customer?: ShopifyCustomer
-  line_items?: Array<{ title?: string; quantity?: number; price?: string }>
+  line_items?: Array<{
+    title?: string
+    quantity?: number
+    price?: string
+    variant_title?: string
+  }>
   fulfillments?: ShopifyFulfillment[]
+  shipping_address?: {
+    address1?: string
+    address2?: string
+    city?: string
+    province?: string
+    country?: string
+    zip?: string
+    phone?: string
+  }
 }
 
 // ============================================================
@@ -58,6 +72,10 @@ interface ExtractedOrderData {
   tracking_number: string
   financial_status: string
   customer_phone: string
+  product_details: string
+  shipping_address: string
+  shipping_city: string
+
 }
 
 function extractOrderData(payload: ShopifyOrderPayload, topic: string): ExtractedOrderData {
@@ -70,6 +88,23 @@ function extractOrderData(payload: ShopifyOrderPayload, topic: string): Extracte
   const lineItems = payload.line_items ?? []
   const itemCount = String(lineItems.reduce((sum, item) => sum + (item.quantity ?? 0), 0) || 0)
 
+  // Build product details string: "1 x SMOKE BLUE PIQUÉ POLO - S / Blue"
+  const productDetails = lineItems
+    .map((item) => {
+      const qty = item.quantity ?? 1
+      const title = item.title ?? 'Product'
+      const variant = item.variant_title ?? ''
+      return variant
+        ? `${qty} x ${title} - ${variant}`
+        : `${qty} x ${title}`
+    })
+    .join('\n')
+
+  // Build shipping address
+  const addr = payload.shipping_address ?? {}
+  const addressParts = [addr.address1, addr.address2].filter(Boolean)
+  const fullAddress = addressParts.join(', ') || ''
+
   return {
     order_number: payload.name ?? `#${payload.order_number ?? ''}`,
     customer_name: customerName,
@@ -79,6 +114,9 @@ function extractOrderData(payload: ShopifyOrderPayload, topic: string): Extracte
     tracking_number: trackingNumber,
     financial_status: payload.financial_status ?? (topic === 'orders/fulfilled' ? 'fulfilled' : ''),
     customer_phone: customer.phone ?? '',
+    product_details: productDetails,
+    shipping_address: fullAddress,
+    shipping_city: addr.city ?? '',
   }
 }
 
