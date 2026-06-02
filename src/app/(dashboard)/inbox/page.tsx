@@ -150,7 +150,6 @@ export default function InboxPage() {
   const handleMessageEvent = useCallback(
     (event: { eventType: string; new: Message; old: Partial<Message> }) => {
       const newMsg = event.new;
-      console.log('[realtime] message event:', event.eventType, 'conv:', newMsg.conversation_id, 'active:', activeConversation?.id, 'sender:', newMsg.sender_type);
 
       if (event.eventType === "INSERT") {
         // Add to messages if it belongs to active conversation
@@ -158,23 +157,15 @@ export default function InboxPage() {
           activeConversation &&
           newMsg.conversation_id === activeConversation.id
         ) {
-          console.log('[realtime] adding message to thread, msgId:', newMsg.id, 'currentMessages:', messages.length);
           setMessages((prev) => {
             // Avoid duplicates
-            if (prev.some((m) => m.id === newMsg.id)) {
-              console.log('[realtime] message already in state, skipping');
-              return prev;
-            }
+            if (prev.some((m) => m.id === newMsg.id)) return prev;
             // Replace optimistic message if it exists
             const withoutOptimistic = prev.filter(
               (m) => !m.id.startsWith("temp-")
             );
-            const next = [...withoutOptimistic, newMsg];
-            console.log('[realtime] messages updated from', prev.length, 'to', next.length);
-            return next;
+            return [...withoutOptimistic, newMsg];
           });
-        } else {
-          console.log('[realtime] message not for active conversation, skipping thread update');
         }
 
         // Update conversation list preview. We need to know *synchronously*
@@ -446,7 +437,22 @@ export default function InboxPage() {
 
 
   const handleMessagesLoaded = useCallback((loaded: Message[]) => {
-    setMessages(loaded);
+    setMessages((prev) => {
+      // Merge fetched messages with existing, preserving any realtime
+      // messages that arrived while the fetch was in flight. Without this,
+      // a fetch that completes after a realtime INSERT overwrites the
+      // new message and it disappears from the thread until the next refetch.
+      const merged = [...loaded];
+      for (const m of prev) {
+        if (!merged.some((existing) => existing.id === m.id)) {
+          merged.push(m);
+        }
+      }
+      return merged.sort(
+        (a, b) =>
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+    });
   }, []);
 
   const handleNewMessage = useCallback((msg: Message) => {
