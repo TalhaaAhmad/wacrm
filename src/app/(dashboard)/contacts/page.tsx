@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import type { Contact, Tag, ContactTag } from '@/types';
@@ -52,6 +53,7 @@ interface ContactWithTags extends Contact {
 }
 
 export default function ContactsPage() {
+  const router = useRouter();
   const supabase = createClient();
 
   const [contacts, setContacts] = useState<ContactWithTags[]>([]);
@@ -447,6 +449,9 @@ export default function ContactsPage() {
         onOpenChange={setDetailOpen}
         contactId={detailContactId}
         onUpdated={fetchContacts}
+        onStartConversation={(conversationId) => {
+          router.push(`/inbox?c=${conversationId}`);
+        }}
       />
 
       {/* Import Modal */}

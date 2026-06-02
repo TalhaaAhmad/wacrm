@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
-import type { Contact, Tag, ContactTag, ContactNote, CustomField, ContactCustomValue } from '@/types';
+import type { Contact, Tag, ContactTag, ContactNote, CustomField, ContactCustomValue, MessageTemplate } from '@/types';
+import { TemplatePicker } from '@/components/inbox/template-picker';
 import {
   Sheet,
   SheetContent,
@@ -30,6 +31,8 @@ import {
   Trash2,
   Save,
   X,
+  MessageCircle,
+  Send,
 } from 'lucide-react';
 
 interface ContactDetailViewProps {
@@ -37,6 +40,7 @@ interface ContactDetailViewProps {
   onOpenChange: (open: boolean) => void;
   contactId: string | null;
   onUpdated: () => void;
+  onStartConversation?: (conversationId: string) => void;
 }
 
 export function ContactDetailView({
@@ -44,6 +48,7 @@ export function ContactDetailView({
   onOpenChange,
   contactId,
   onUpdated,
+  onStartConversation,
 }: ContactDetailViewProps) {
   const supabase = createClient();
 
@@ -74,6 +79,10 @@ export function ContactDetailView({
   const [customValues, setCustomValues] = useState<Record<string, string>>({});
   const [savingCustom, setSavingCustom] = useState(false);
   const [loadingCustom, setLoadingCustom] = useState(false);
+
+  // Template picker state
+  const [templateModalOpen, setTemplateModalOpen] = useState(false);
+  const [sendingTemplate, setSendingTemplate] = useState(false);
 
   const fetchContact = useCallback(async () => {
     if (!contactId) return;
@@ -363,6 +372,23 @@ export function ContactDetailView({
               </div>
             </SheetHeader>
 
+            {/* Send Message Button */}
+            <div className="px-4 pt-3">
+              <Button
+                onClick={() => setTemplateModalOpen(true)}
+                disabled={sendingTemplate}
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                size="sm"
+              >
+                {sendingTemplate ? (
+                  <Loader2 className="size-3.5 animate-spin mr-1.5" />
+                ) : (
+                  <MessageCircle className="size-3.5 mr-1.5" />
+                )}
+                Send Message
+              </Button>
+            </div>
+
             {/* Tabs */}
             <Tabs defaultValue="details" className="flex-1 flex flex-col min-h-0">
               <TabsList className="bg-muted/50 border-b border-border mx-4 mt-3">
@@ -599,6 +625,42 @@ export function ContactDetailView({
           </div>
         )}
       </SheetContent>
+
+      <TemplatePicker
+        open={templateModalOpen}
+        onOpenChange={setTemplateModalOpen}
+        onSelect={async (template: MessageTemplate, params: string[]) => {
+          if (!contactId) return;
+          setSendingTemplate(true);
+          try {
+            const res = await fetch('/api/whatsapp/start-conversation', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contact_id: contactId,
+                template_name: template.name,
+                template_params: params,
+              }),
+            });
+            const payload = await res.json().catch(() => ({}));
+            if (!res.ok) {
+              toast.error(`Failed to send: ${payload.error || res.status}`);
+              return;
+            }
+            toast.success('Message sent!');
+            onUpdated();
+            if (onStartConversation && payload.conversation_id) {
+              onStartConversation(payload.conversation_id);
+            }
+            onOpenChange(false);
+          } catch (err) {
+            const reason = err instanceof Error ? err.message : 'network error';
+            toast.error(`Failed to send: ${reason}`);
+          } finally {
+            setSendingTemplate(false);
+          }
+        }}
+      />
     </Sheet>
   );
 }
