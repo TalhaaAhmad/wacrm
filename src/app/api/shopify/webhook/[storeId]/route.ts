@@ -314,6 +314,12 @@ export async function POST(
     return String(orderData[key] ?? '')
   })
 
+  // Debug log the params
+  console.log('[shopify/webhook] Template:', rule.template_name)
+  console.log('[shopify/webhook] Params count:', templateParams.length)
+  console.log('[shopify/webhook] Params:', templateParams)
+  console.log('[shopify/webhook] Variable mappings:', sortedMappings.map(m => ({ pos: m.position, source: m.source })))
+
   // 9. Send WhatsApp template message
   if (!orderData.customer_phone) {
     await logWebhook(supabaseAdmin(), store.id, store.user_id, eventType, payload, 'failed', 'No customer phone')

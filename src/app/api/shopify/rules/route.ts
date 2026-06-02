@@ -62,6 +62,8 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { store_id, event_type, template_name, template_language, variable_mapping, is_active } = body
 
+    console.log('[shopify/rules] Received:', { store_id, event_type, template_name, is_active, variable_mapping })
+
     if (!store_id || !event_type || !template_name) {
       return NextResponse.json(
         { error: 'store_id, event_type, and template_name are required' },

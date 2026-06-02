@@ -610,6 +610,8 @@ function RuleEditor({
     const selectedTemplate = templates.find((t) => t.name === templateName);
     const templateLanguage = selectedTemplate?.language ?? 'en_US';
 
+    console.log('[shopify] Saving rule:', { eventType, isActive, templateName, variableMapping });
+
     setSaving(true);
     try {
       const res = await fetch('/api/shopify/rules', {
@@ -625,14 +627,17 @@ function RuleEditor({
         }),
       });
 
+      const data = await res.json();
+      console.log('[shopify] Save response:', res.status, data);
+
       if (res.ok) {
         toast.success(`${eventLabel} rule saved`);
         onSaved();
       } else {
-        const data = await res.json();
         toast.error(data.error || 'Failed to save rule');
       }
-    } catch {
+    } catch (err) {
+      console.error('[shopify] Save error:', err);
       toast.error('Failed to save rule');
     } finally {
       setSaving(false);
@@ -696,7 +701,7 @@ function RuleEditor({
           ) : (
             <div className="space-y-2">
               {variableMapping.map((mapping, index) => (
-                <div key={index} className="flex items-center gap-2">
+                <div key={`${mapping.position}-${index}`} className="flex items-center gap-2">
                   <span className="text-xs text-muted-foreground w-6 shrink-0">
                     #{mapping.position}
                   </span>
