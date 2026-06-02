@@ -565,7 +565,7 @@ function RuleEditor({
   templates: MessageTemplate[];
   onSaved: () => void;
 }) {
-  const [isActive, setIsActive] = useState(existingRule?.is_active ?? false);
+  const [isActive, setIsActive] = useState(existingRule?.is_active ?? true);
   const [templateName, setTemplateName] = useState(existingRule?.template_name ?? '');
   const [variableMapping, setVariableMapping] = useState<ShopifyVariableMapping[]>(
     existingRule?.variable_mapping ?? [],
@@ -575,7 +575,7 @@ function RuleEditor({
 
   // Sync when existingRule changes (e.g. after save)
   useEffect(() => {
-    setIsActive(existingRule?.is_active ?? false);
+    setIsActive(existingRule?.is_active ?? true);
     setTemplateName(existingRule?.template_name ?? '');
     setVariableMapping(existingRule?.variable_mapping ?? []);
     setDirty(false);
@@ -605,6 +605,10 @@ function RuleEditor({
       return;
     }
 
+    // Find the selected template to get its language
+    const selectedTemplate = templates.find((t) => t.name === templateName);
+    const templateLanguage = selectedTemplate?.language ?? 'en_US';
+
     setSaving(true);
     try {
       const res = await fetch('/api/shopify/rules', {
@@ -614,6 +618,7 @@ function RuleEditor({
           store_id: storeId,
           event_type: eventType,
           template_name: templateName,
+          template_language: templateLanguage,
           variable_mapping: variableMapping,
           is_active: isActive,
         }),
