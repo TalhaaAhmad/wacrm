@@ -232,12 +232,24 @@ export async function POST(
     console.error('[shopify/webhook] Error fetching rule:', ruleError)
   }
 
+  // 7. No rule — log as processed (contact was saved) and ack.
+  //    This lets users verify webhooks are arriving before setting up rules.
   if (!rule) {
-    await logWebhook(supabaseAdmin(), store.id, store.user_id, eventType, payload, 'skipped', 'No active rule')
-    return NextResponse.json({ status: 'no_rule' }, { status: 200 })
+    await logWebhook(
+      supabaseAdmin(),
+      store.id,
+      store.user_id,
+      eventType,
+      payload,
+      'processed',
+      'No notification rule configured',
+      undefined,
+      contactId,
+    )
+    return NextResponse.json({ status: 'received' }, { status: 200 })
   }
 
-  // 7. Build template params from variable_mapping
+  // 8. Build template params from variable_mapping
   const variableMapping = (rule.variable_mapping ?? []) as Array<{ position: number; source: string }>
   const sortedMappings = [...variableMapping].sort((a, b) => a.position - b.position)
   const templateParams: string[] = sortedMappings.map((m) => {
@@ -245,7 +257,7 @@ export async function POST(
     return String(orderData[key] ?? '')
   })
 
-  // 8. Send WhatsApp template message
+  // 9. Send WhatsApp template message
   if (!orderData.customer_phone) {
     await logWebhook(supabaseAdmin(), store.id, store.user_id, eventType, payload, 'failed', 'No customer phone')
     return NextResponse.json({ status: 'no_phone' }, { status: 200 })
