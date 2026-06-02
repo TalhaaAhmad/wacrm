@@ -32,19 +32,13 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#020617",
-  colorScheme: "dark",
+  themeColor: "#f0fdf4",
+  colorScheme: "light",
 };
 
-// Inline boot script — runs before React hydrates so the user's
-// chosen theme is on the <html> element before first paint. Without
-// this every page load flashes the default Violet for a frame before
-// the React tree mounts and applies the picked theme.
-//
-// Kept dependency-free (no imports, no JSX) — must be a string the
-// browser can run as a single <script>. Knowledge of valid theme IDs
-// is sourced from the THEME_IDS constant so adding a theme doesn't
-// silently break the boot path.
+// Inline boot script — runs before React hydrates so the theme
+// attribute is on <html> before first paint. With a single theme
+// this mainly ensures `data-theme="light"` is set immediately.
 const THEME_BOOT_SCRIPT = `
 (function(){
   try {
@@ -82,13 +76,13 @@ export default function RootLayout({
         <ThemeProvider>
           {children}
           <Toaster
-            theme="dark"
+            theme="light"
             position="top-right"
             toastOptions={{
               style: {
-                background: "rgb(30 41 59)",
-                border: "1px solid rgb(51 65 85)",
-                color: "white",
+                background: "#ffffff",
+                border: "1px solid #e5e7eb",
+                color: "#111827",
               },
             }}
           />

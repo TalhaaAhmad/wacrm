@@ -155,49 +155,6 @@ export interface MessageTemplate {
   created_at: string;
 }
 
-export interface Pipeline {
-  id: string;
-  user_id: string;
-  name: string;
-  created_at: string;
-}
-
-export interface PipelineStage {
-  id: string;
-  pipeline_id: string;
-  name: string;
-  position: number;
-  color: string;
-  created_at: string;
-}
-
-export type DealStatus = 'open' | 'won' | 'lost';
-
-export interface Deal {
-  id: string;
-  user_id: string;
-  pipeline_id: string;
-  stage_id: string;
-  /**
-   * Nullable after migration 004 — becomes NULL when the referenced
-   * contact is deleted (ON DELETE SET NULL). History preserved.
-   */
-  contact_id: string | null;
-  conversation_id?: string;
-  assigned_to?: string;
-  title: string;
-  value: number;
-  currency?: string;
-  notes?: string;
-  expected_close_date?: string;
-  status?: DealStatus;
-  created_at: string;
-  updated_at?: string;
-  contact?: Contact;
-  stage?: PipelineStage;
-  assignee?: Profile;
-}
-
 export type BroadcastStatus = 'draft' | 'scheduled' | 'sending' | 'sent' | 'failed';
 export type RecipientStatus = 'pending' | 'sent' | 'delivered' | 'read' | 'replied' | 'failed';
 
@@ -246,166 +203,57 @@ export interface BroadcastRecipient {
 }
 
 // ============================================================
-// Automations (migration 006)
+// SHOPIFY INTEGRATION
 // ============================================================
 
-export type AutomationTriggerType =
-  | 'new_message_received'
-  | 'first_inbound_message'
-  | 'keyword_match'
-  | 'new_contact_created'
-  | 'conversation_assigned'
-  | 'tag_added'
-  | 'time_based';
-
-export type AutomationStepType =
-  | 'send_message'
-  | 'send_template'
-  | 'add_tag'
-  | 'remove_tag'
-  | 'assign_conversation'
-  | 'update_contact_field'
-  | 'create_deal'
-  | 'wait'
-  | 'condition'
-  | 'send_webhook'
-  | 'close_conversation';
-
-export type AutomationLogStatus = 'success' | 'partial' | 'failed';
-
-export interface KeywordMatchTriggerConfig {
-  keywords: string[];
-  match_type: 'exact' | 'contains';
-  case_sensitive?: boolean;
-}
-
-export interface TagTriggerConfig {
-  tag_id: string;
-}
-
-export interface TimeBasedTriggerConfig {
-  /** Cron expression or simple HH:mm string; engine can accept either. */
-  schedule: string;
-  timezone?: string;
-}
-
-export type AutomationTriggerConfig =
-  | Record<string, never>
-  | KeywordMatchTriggerConfig
-  | TagTriggerConfig
-  | TimeBasedTriggerConfig
-  | Record<string, unknown>;
-
-export interface SendMessageStepConfig {
-  text: string;
-}
-
-export interface SendTemplateStepConfig {
-  template_name: string;
-  language?: string;
-  variables?: Record<string, string>;
-}
-
-export interface TagStepConfig {
-  tag_id: string;
-}
-
-export interface AssignConversationStepConfig {
-  mode: 'specific' | 'round_robin';
-  agent_id?: string;
-}
-
-export interface UpdateContactFieldStepConfig {
-  field: string;
-  value: string;
-}
-
-export interface CreateDealStepConfig {
-  pipeline_id: string;
-  stage_id: string;
-  title: string;
-  value?: number;
-}
-
-export interface WaitStepConfig {
-  amount: number;
-  unit: 'minutes' | 'hours' | 'days';
-}
-
-export type ConditionSubject =
-  | 'contact_field'
-  | 'tag_presence'
-  | 'message_content'
-  | 'time_of_day';
-
-export interface ConditionStepConfig {
-  subject: ConditionSubject;
-  /** e.g. field name, tag id, substring, or "HH:mm-HH:mm" depending on subject */
-  operand?: string;
-  /** For contact_field equals / message_content contains — comparison value */
-  value?: string;
-}
-
-export interface SendWebhookStepConfig {
-  url: string;
-  headers?: Record<string, string>;
-  body_template?: string;
-}
-
-export type AutomationStepConfig =
-  | SendMessageStepConfig
-  | SendTemplateStepConfig
-  | TagStepConfig
-  | AssignConversationStepConfig
-  | UpdateContactFieldStepConfig
-  | CreateDealStepConfig
-  | WaitStepConfig
-  | ConditionStepConfig
-  | SendWebhookStepConfig
-  | Record<string, never>
-  | Record<string, unknown>;
-
-export interface Automation {
+export interface ShopifyStore {
   id: string;
   user_id: string;
-  name: string;
-  description?: string;
-  trigger_type: AutomationTriggerType;
-  trigger_config: AutomationTriggerConfig;
+  shop_domain: string;
+  store_name: string;
+  access_token: string;
+  webhook_secret: string;
   is_active: boolean;
-  execution_count: number;
-  last_executed_at?: string | null;
   created_at: string;
   updated_at: string;
 }
 
-export interface AutomationStep {
+export interface ShopifyNotificationRule {
   id: string;
-  automation_id: string;
-  parent_step_id?: string | null;
-  branch?: 'yes' | 'no' | null;
-  step_type: AutomationStepType;
-  step_config: AutomationStepConfig;
-  position: number;
-  created_at: string;
-}
-
-export interface AutomationLogStepResult {
-  step_id: string;
-  step_type: AutomationStepType;
-  status: 'success' | 'skipped' | 'failed';
-  detail?: string;
-}
-
-export interface AutomationLog {
-  id: string;
-  automation_id: string;
+  store_id: string;
   user_id: string;
-  contact_id: string | null;
-  trigger_event: string;
-  steps_executed: AutomationLogStepResult[];
-  status: AutomationLogStatus;
-  error_message?: string | null;
+  event_type: 'order_created' | 'order_fulfilled';
+  template_name: string;
+  template_language: string;
+  variable_mapping: ShopifyVariableMapping[];
+  is_active: boolean;
   created_at: string;
-  contact?: Contact;
+  updated_at: string;
+}
+
+export interface ShopifyVariableMapping {
+  position: number;
+  source:
+    | 'order_number'
+    | 'total_price'
+    | 'customer_name'
+    | 'currency'
+    | 'item_count'
+    | 'tracking_number'
+    | 'financial_status';
+}
+
+export type ShopifyWebhookLogStatus = 'processed' | 'failed' | 'skipped';
+
+export interface ShopifyWebhookLog {
+  id: string;
+  store_id: string;
+  user_id: string;
+  event_type: string;
+  payload: Record<string, unknown>;
+  status: ShopifyWebhookLogStatus;
+  error_message?: string;
+  whatsapp_message_id?: string;
+  contact_id?: string;
+  created_at: string;
 }

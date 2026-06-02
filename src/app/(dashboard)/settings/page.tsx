@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Settings, MessageSquare, Tag, User, Palette } from 'lucide-react';
+import { Settings, MessageSquare, Tag, User, Palette, ShoppingBag } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { WhatsAppConfig } from '@/components/settings/whatsapp-config';
 import { TemplateManager } from '@/components/settings/template-manager';
@@ -10,10 +10,12 @@ import { ProfileForm } from '@/components/settings/profile-form';
 import { PasswordForm } from '@/components/settings/password-form';
 import { SessionsCard } from '@/components/settings/sessions-card';
 import { AppearancePanel } from '@/components/settings/appearance-panel';
+import { ShopifyIntegration } from '@/components/settings/shopify-integration';
 
 const TAB_VALUES = [
   'profile',
   'whatsapp',
+  'shopify',
   'templates',
   'tags',
   'appearance',
@@ -44,46 +46,53 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Settings</h1>
-        <p className="text-sm text-slate-400 mt-1">
-          Manage your profile, WhatsApp® integration, message templates, and
-          tags.
+        <h1 className="text-2xl font-bold text-foreground">Settings</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Manage your profile, WhatsApp® integration, Shopify stores, message
+          templates, and tags.
         </p>
       </div>
 
       <Tabs value={tab} onValueChange={(v) => onChange(v as TabValue)}>
-        <TabsList className="bg-slate-900 border border-slate-700">
+        <TabsList className="bg-card border border-border">
           <TabsTrigger
             value="profile"
-            className="data-active:bg-slate-800 data-active:text-primary text-slate-400"
+            className="data-active:bg-muted data-active:text-primary text-muted-foreground"
           >
             <User className="size-4" />
             Profile
           </TabsTrigger>
           <TabsTrigger
             value="whatsapp"
-            className="data-active:bg-slate-800 data-active:text-primary text-slate-400"
+            className="data-active:bg-muted data-active:text-primary text-muted-foreground"
           >
             <Settings className="size-4" />
             WhatsApp Config
           </TabsTrigger>
           <TabsTrigger
+            value="shopify"
+            className="data-active:bg-muted data-active:text-primary text-muted-foreground"
+          >
+            <ShoppingBag className="size-4" />
+            Shopify
+          </TabsTrigger>
+          <TabsTrigger
             value="templates"
-            className="data-active:bg-slate-800 data-active:text-primary text-slate-400"
+            className="data-active:bg-muted data-active:text-primary text-muted-foreground"
           >
             <MessageSquare className="size-4" />
             Templates
           </TabsTrigger>
           <TabsTrigger
             value="tags"
-            className="data-active:bg-slate-800 data-active:text-primary text-slate-400"
+            className="data-active:bg-muted data-active:text-primary text-muted-foreground"
           >
             <Tag className="size-4" />
             Tags
           </TabsTrigger>
           <TabsTrigger
             value="appearance"
-            className="data-active:bg-slate-800 data-active:text-primary text-slate-400"
+            className="data-active:bg-muted data-active:text-primary text-muted-foreground"
           >
             <Palette className="size-4" />
             Appearance
@@ -98,6 +107,10 @@ export default function SettingsPage() {
 
         <TabsContent value="whatsapp">
           <WhatsAppConfig />
+        </TabsContent>
+
+        <TabsContent value="shopify">
+          <ShopifyIntegration />
         </TabsContent>
 
         <TabsContent value="templates">

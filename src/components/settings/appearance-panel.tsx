@@ -1,113 +1,85 @@
 "use client";
 
-import { Check } from "lucide-react";
-
-import { useTheme } from "@/hooks/use-theme";
-import { THEMES, type ThemeId } from "@/lib/themes";
-import { cn } from "@/lib/utils";
+import { Check, Palette } from "lucide-react";
 
 /**
- * Appearance panel — color-theme picker.
+ * Appearance panel — shows the active theme.
  *
- * Click a card → applies + persists immediately. No save button:
- * the whole change is a single CSS-variable swap on <html>, there's
- * nothing to roll back. The active card carries a check chip + a
- * primary-tinted border so the current pick is obvious.
- *
- * Persistence: localStorage only (device-scoped). The boot script in
- * layout.tsx replays the choice before first paint on subsequent
- * loads.
+ * Since the app now uses a single light-green theme (no user-switchable
+ * variants), this panel is informational only. It confirms the active
+ * look and explains the design language.
  */
 export function AppearancePanel() {
-  const { theme, setTheme } = useTheme();
   return (
     <section className="space-y-4">
       <div>
-        <h2 className="text-lg font-semibold text-white">Color theme</h2>
-        <p className="mt-1 text-sm text-slate-400">
-          Pick the accent color used across the app. All themes stay
-          dark — only the primary color (buttons, active nav, badges)
-          changes. Saved to this device.
+        <h2 className="text-lg font-semibold text-foreground">Appearance</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Your workspace uses the Light Green theme — a clean, modern
+          design inspired by WhatsApp's signature green on white.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {THEMES.map((t) => (
-          <ThemeCard
-            key={t.id}
-            id={t.id}
-            name={t.name}
-            tagline={t.tagline}
-            swatch={t.swatch}
-            isActive={t.id === theme}
-            onPick={() => setTheme(t.id)}
-          />
-        ))}
+      <div className="rounded-lg border border-border bg-card p-5">
+        <div className="flex items-center gap-3">
+          <div
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+            style={{ background: "oklch(0.76 0.18 155)" }}
+            aria-hidden
+          >
+            <Palette className="h-5 w-5 text-white" />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-foreground">
+                Light Green
+              </span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-medium text-primary">
+                <Check className="h-3 w-3" />
+                Active
+              </span>
+            </div>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              WhatsApp green accents on a clean white background.
+            </p>
+          </div>
+        </div>
+
+        {/* Color swatches */}
+        <div className="mt-4 flex items-center gap-2">
+          <Swatch label="Primary" color="oklch(0.76 0.18 155)" />
+          <Swatch label="Background" color="oklch(0.993 0.002 155)" border />
+          <Swatch label="Card" color="oklch(1 0 0)" border />
+          <Swatch label="Muted" color="oklch(0.97 0.003 155)" border />
+          <Swatch label="Sidebar" color="oklch(0.2 0.05 162)" />
+        </div>
       </div>
     </section>
   );
 }
 
-function ThemeCard({
-  id,
-  name,
-  tagline,
-  swatch,
-  isActive,
-  onPick,
+function Swatch({
+  label,
+  color,
+  border = false,
 }: {
-  id: ThemeId;
-  name: string;
-  tagline: string;
-  swatch: string;
-  isActive: boolean;
-  onPick: () => void;
+  label: string;
+  color: string;
+  border?: boolean;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onPick}
-      aria-pressed={isActive}
-      aria-label={`Use ${name} theme`}
-      className={cn(
-        "flex flex-col gap-3 rounded-lg border bg-card p-4 text-left transition-colors",
-        isActive
-          ? "border-primary/60 ring-2 ring-primary/40"
-          : "border-slate-800 hover:border-slate-700 hover:bg-slate-800/40",
-      )}
-    >
-      <div className="flex items-center justify-between">
-        <span
-          aria-hidden
-          className="h-8 w-8 shrink-0 rounded-full"
-          style={{
-            background: swatch,
-            boxShadow: "inset 0 0 0 1px oklch(1 0 0 / 0.15)",
-          }}
-        />
-        {isActive && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-medium text-primary">
-            <Check className="h-3 w-3" />
-            Active
-          </span>
-        )}
-      </div>
-      <div>
-        <div className="text-sm font-semibold text-white">{name}</div>
-        <div className="mt-1 text-xs leading-relaxed text-slate-400">
-          {tagline}
-        </div>
-      </div>
-      <div
-        className="mt-1 flex h-2 overflow-hidden rounded-full"
+    <div className="flex flex-col items-center gap-1">
+      <span
+        className="h-6 w-6 rounded-full"
+        style={{
+          background: color,
+          boxShadow: border
+            ? "inset 0 0 0 1px oklch(0.85 0.01 260)"
+            : "inset 0 0 0 1px oklch(1 0 0 / 0.15)",
+        }}
         aria-hidden
-      >
-        <span className="flex-1" style={{ background: swatch }} />
-        <span className="w-3 bg-slate-700" />
-        <span className="w-3 bg-slate-800" />
-        <span className="w-3 bg-slate-900" />
-      </div>
-      <span className="sr-only">Theme id: {id}</span>
-    </button>
+      />
+      <span className="text-[10px] text-muted-foreground">{label}</span>
+    </div>
   );
 }
