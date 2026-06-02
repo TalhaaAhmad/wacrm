@@ -158,15 +158,20 @@ export default function InboxPage() {
           activeConversation &&
           newMsg.conversation_id === activeConversation.id
         ) {
-          console.log('[realtime] adding message to thread');
+          console.log('[realtime] adding message to thread, msgId:', newMsg.id, 'currentMessages:', messages.length);
           setMessages((prev) => {
             // Avoid duplicates
-            if (prev.some((m) => m.id === newMsg.id)) return prev;
+            if (prev.some((m) => m.id === newMsg.id)) {
+              console.log('[realtime] message already in state, skipping');
+              return prev;
+            }
             // Replace optimistic message if it exists
             const withoutOptimistic = prev.filter(
               (m) => !m.id.startsWith("temp-")
             );
-            return [...withoutOptimistic, newMsg];
+            const next = [...withoutOptimistic, newMsg];
+            console.log('[realtime] messages updated from', prev.length, 'to', next.length);
+            return next;
           });
         } else {
           console.log('[realtime] message not for active conversation, skipping thread update');
