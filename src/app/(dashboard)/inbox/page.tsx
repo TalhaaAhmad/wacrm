@@ -229,6 +229,9 @@ export default function InboxPage() {
             if (prev.some((c) => c.id === conv.id)) return prev;
             return [conv, ...prev];
           });
+          // Hydrate immediately so the `contact` join is filled in ASAP.
+          // The bare realtime INSERT payload has no contact, so the list
+          // item shows "Unknown" until this fetch completes.
           hydrateConversation(conv.id);
         }
       }
@@ -240,17 +243,23 @@ export default function InboxPage() {
           // RIGHT NOW, so any positive value would just flicker the badge
           // back on for the ~100ms it takes for the reset effect's server
           // UPDATE to round-trip. Non-active convs take the value as-is.
+          //
+          // IMPORTANT: Realtime payloads never include joins, so `conv`
+          // has no `contact` field. We must preserve the existing contact
+          // from state — otherwise spreading `conv` wipes it to undefined,
+          // and the list item / thread header falls back to "Customer" /
+          // empty avatar until the next full refetch.
           const isActive = activeConversation?.id === conv.id;
           setConversations((prev) =>
-            prev.map((c) =>
-              c.id === conv.id
-                ? {
-                    ...c,
-                    ...conv,
-                    unread_count: isActive ? 0 : conv.unread_count,
-                  }
-                : c,
-            ),
+            prev.map((c) => {
+              if (c.id !== conv.id) return c;
+              return {
+                ...c,
+                ...conv,
+                contact: c.contact,
+                unread_count: isActive ? 0 : conv.unread_count,
+              };
+            }),
           );
         } else {
           // UPDATE arrived before the INSERT (or after a missed INSERT)
@@ -260,10 +269,11 @@ export default function InboxPage() {
           hydrateConversation(conv.id);
         }
 
-        // Update active conversation if it changed
+        // Update active conversation if it changed — preserve `contact`
+        // for the same reason as the list update above.
         if (activeConversation && conv.id === activeConversation.id) {
           setActiveConversation((prev) =>
-            prev ? { ...prev, ...conv } : prev
+            prev ? { ...prev, ...conv, contact: prev.contact } : prev
           );
         }
       }
