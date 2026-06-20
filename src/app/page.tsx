@@ -351,7 +351,7 @@ function ShopifyFeatures() {
               Deep Shopify integration
             </h2>
             <p className="mt-4 text-muted-foreground leading-relaxed">
-              We don't just bolt WhatsApp onto your store. Our native Shopify
+              We don&apos;t just bolt WhatsApp onto your store. Our native Shopify
               integration syncs products, orders, customers, and inventory in
               real time — so every WhatsApp message is backed by live store data.
             </p>

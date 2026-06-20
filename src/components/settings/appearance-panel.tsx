@@ -16,7 +16,7 @@ export function AppearancePanel() {
         <h2 className="text-lg font-semibold text-foreground">Appearance</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Your workspace uses the Light Green theme — a clean, modern
-          design inspired by WhatsApp's signature green on white.
+          design inspired by WhatsApp&apos;s signature green on white.
         </p>
       </div>
 

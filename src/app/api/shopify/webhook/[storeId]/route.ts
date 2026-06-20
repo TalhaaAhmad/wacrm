@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import crypto from 'crypto'
 import { createClient } from '@supabase/supabase-js'
 import { decrypt } from '@/lib/whatsapp/encryption'
 import { sendTemplateMessage } from '@/lib/whatsapp/meta-api'
@@ -235,8 +236,8 @@ export async function POST(
       try {
         const { decrypt } = await import('@/lib/whatsapp/encryption')
         const secret = decrypt(webhookSecret)
-        const hash = require('crypto').createHmac('sha256', secret).update(rawBody, 'utf8').digest('base64')
-        if (!require('crypto').timingSafeEqual(Buffer.from(hash), Buffer.from(shopifySignature))) {
+        const hash = crypto.createHmac('sha256', secret).update(rawBody, 'utf8').digest('base64')
+        if (!crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(shopifySignature))) {
           console.warn('[shopify/webhook] Invalid HMAC for store:', storeId)
           return NextResponse.json({ status: 'invalid_signature' }, { status: 200 })
         }

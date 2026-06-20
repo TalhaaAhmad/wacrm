@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Standalone CommonJS dev/test scripts — require() is the correct
+    // idiom there, not an app-code lint target.
+    "scripts/**",
   ]),
 ]);
 
