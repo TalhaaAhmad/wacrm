@@ -55,6 +55,14 @@ const SECURITY_HEADERS = [
 
 const nextConfig: NextConfig = {
   /**
+   * Dev-only: allow the ngrok tunnel host to request Next.js dev
+   * resources (HMR, /_next/*). Required because Meta's webhook needs a
+   * public HTTPS URL, so the app is often viewed through the tunnel in
+   * development. Has no effect on production builds.
+   */
+  allowedDevOrigins: ['thaddeus-unfighting-intersystematically.ngrok-free.dev'],
+
+  /**
    * Cache-Control policy.
    *
    * Why this exists:
