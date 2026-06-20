@@ -44,6 +44,7 @@ export async function POST(request: Request) {
       content_text,
       media_url,
       template_name,
+      template_language,
       template_params,
       reply_to_message_id,
     } = body
@@ -183,6 +184,10 @@ export async function POST(request: Request) {
           accessToken,
           to: phone,
           templateName: template_name,
+          // Pass the template's stored language through. When undefined,
+          // sendTemplateMessage falls back to its 'en_US' default. Sending
+          // the wrong language is what triggers Meta error #132001.
+          language: template_language || undefined,
           params: template_params || [],
           contextMessageId,
         })
