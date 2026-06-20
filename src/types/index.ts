@@ -136,6 +136,12 @@ export interface WhatsAppConfig {
   waba_id?: string;
   access_token: string;
   verify_token?: string;
+  /**
+   * Meta App Secret, encrypted at rest (AES-256-GCM). Used to HMAC-verify
+   * inbound webhooks. Nullable — the webhook handler falls back to the
+   * global META_APP_SECRET env var when this isn't set.
+   */
+  app_secret?: string;
   status: 'connected' | 'disconnected';
   connected_at?: string;
 }

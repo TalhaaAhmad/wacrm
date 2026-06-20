@@ -6,6 +6,7 @@ import {
   useEffect,
   useState,
   useCallback,
+  useRef,
   type ReactNode,
 } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -66,6 +67,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // settles later. Callers that gate on `profile.*` need to know which
   // window they're in — see the type doc above.
   const [profileLoading, setProfileLoading] = useState(true);
+  // Identity of the currently-loaded user. Used to ignore the redundant
+  // auth events Supabase re-fires on tab refocus (see the listener below).
+  const currentUserIdRef = useRef<string | null>(null);
 
   // Shared across init, auth-state-change listener, and the exposed
   // refreshProfile() callback. Reads the current session's user id and
@@ -130,6 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (!mounted) return;
         const currentUser = session?.user ?? null;
+        currentUserIdRef.current = currentUser?.id ?? null;
         setUser(currentUser);
 
         if (currentUser) {
@@ -159,6 +164,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!mounted) return;
       const currentUser = session?.user ?? null;
+      const newUserId = currentUser?.id ?? null;
+
+      // Supabase re-emits SIGNED_IN / TOKEN_REFRESHED every time the tab
+      // regains focus (GoTrue recovers + refreshes the session on
+      // visibilitychange). When the signed-in identity hasn't actually
+      // changed, redoing the full update here — a fresh `user` object plus
+      // a profile refetch that flips profileLoading — re-renders the whole
+      // app and flashes loading UI, which reads as a full reload on every
+      // tab switch. Ignore those no-op events; only react to real
+      // sign-in / sign-out / account changes.
+      if (newUserId === currentUserIdRef.current) {
+        setLoading(false);
+        return;
+      }
+
+      currentUserIdRef.current = newUserId;
       setUser(currentUser);
 
       if (currentUser) {

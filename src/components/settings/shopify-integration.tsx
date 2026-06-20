@@ -106,7 +106,10 @@ export function ShopifyIntegration() {
     if (!user) return;
     setLoading(true);
     try {
-      const res = await fetch('/api/shopify/stores');
+      // no-store: without it the browser can serve a heuristically-cached
+      // copy of this GET right after a mutation, so a freshly toggled /
+      // added / deleted store shows its old state until the next refetch.
+      const res = await fetch('/api/shopify/stores', { cache: 'no-store' });
       const data = await res.json();
       if (res.ok) {
         setStores(data.stores ?? []);
@@ -118,6 +121,15 @@ export function ShopifyIntegration() {
       setLoading(false);
     }
   }, [user]);
+
+  // Patch a single store in place from an authoritative server response
+  // (e.g. the PATCH toggle result). Avoids a full refetch — which both
+  // flashes the whole list to a spinner and can read a stale cached GET.
+  const applyStoreUpdate = useCallback((updated: ShopifyStore) => {
+    setStores((prev) =>
+      prev.map((s) => (s.id === updated.id ? { ...s, ...updated } : s)),
+    );
+  }, []);
 
   useEffect(() => {
     if (authLoading) return;
@@ -171,7 +183,7 @@ export function ShopifyIntegration() {
               key={store.id}
               store={store}
               onDeleted={fetchStores}
-              onToggle={fetchStores}
+              onToggle={applyStoreUpdate}
             />
           ))}
         </Accordion>
@@ -197,7 +209,7 @@ function StoreCard({
 }: {
   store: ShopifyStore;
   onDeleted: () => void;
-  onToggle: () => void;
+  onToggle: (store: ShopifyStore) => void;
 }) {
   const [deleting, setDeleting] = useState(false);
   const [toggling, setToggling] = useState(false);
@@ -234,9 +246,14 @@ function StoreCard({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_active: checked }),
       });
-      if (res.ok) {
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.store) {
         toast.success(checked ? 'Store activated' : 'Store deactivated');
-        onToggle();
+        // Drive the UI from the row the server actually persisted, rather
+        // than refetching — keeps the toggle in sync in one step.
+        onToggle(data.store);
+      } else {
+        toast.error(data.error || 'Failed to toggle store');
       }
     } catch {
       toast.error('Failed to toggle store');
@@ -492,9 +509,13 @@ function NotificationRulesSection({ storeId }: { storeId: string }) {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
+      // no-store on both: after saving a rule we refetch here, and a
+      // heuristically-cached GET would return the pre-save rule, which the
+      // RuleEditor sync-effect then snaps the form back to — the same
+      // one-step-stale bug the store toggle had.
       const [rulesRes, templatesRes] = await Promise.all([
-        fetch(`/api/shopify/rules?store_id=${storeId}`),
-        fetch('/api/whatsapp/templates'),
+        fetch(`/api/shopify/rules?store_id=${storeId}`, { cache: 'no-store' }),
+        fetch('/api/whatsapp/templates', { cache: 'no-store' }),
       ]);
 
       if (rulesRes.ok) {
@@ -760,7 +781,9 @@ function WebhookLogsSection({ storeId }: { storeId: string }) {
 
   const fetchLogs = useCallback(async () => {
     try {
-      const res = await fetch(`/api/shopify/logs?store_id=${storeId}`);
+      const res = await fetch(`/api/shopify/logs?store_id=${storeId}`, {
+        cache: 'no-store',
+      });
       if (res.ok) {
         const data = await res.json();
         setLogs(data.logs ?? []);

@@ -519,6 +519,10 @@ export function MessageThread({
             conversation_id: conversation.id,
             message_type: "template",
             template_name: template.name,
+            // Forward the template's approved language ("translation").
+            // Meta rejects with #132001 if the name+language pair doesn't
+            // match an approved template — and most templates aren't en_US.
+            template_language: template.language,
             template_params: params,
             content_text: renderedBody,
           }),
