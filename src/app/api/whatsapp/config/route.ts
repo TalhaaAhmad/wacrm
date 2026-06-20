@@ -121,7 +121,8 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { phone_number_id, waba_id, access_token, verify_token } = body
+    const { phone_number_id, waba_id, access_token, verify_token, app_secret } =
+      body
 
     if (!access_token || !phone_number_id) {
       return NextResponse.json(
@@ -146,12 +147,17 @@ export async function POST(request: Request) {
       )
     }
 
-    // Encrypt sensitive tokens before storing
+    // Encrypt sensitive tokens before storing.
+    // `encryptedAppSecret === undefined` means the caller didn't send one
+    // (e.g. an update where the masked field was left untouched) — we then
+    // leave the existing column value alone instead of clobbering it.
     let encryptedAccessToken: string
     let encryptedVerifyToken: string | null
+    let encryptedAppSecret: string | undefined
     try {
       encryptedAccessToken = encrypt(access_token)
       encryptedVerifyToken = verify_token ? encrypt(verify_token) : null
+      encryptedAppSecret = app_secret ? encrypt(app_secret) : undefined
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown encryption error'
       console.error('Encryption failed:', message)
@@ -172,17 +178,24 @@ export async function POST(request: Request) {
       .maybeSingle()
 
     if (existing) {
+      const updatePayload: Record<string, unknown> = {
+        phone_number_id,
+        waba_id: waba_id || null,
+        access_token: encryptedAccessToken,
+        verify_token: encryptedVerifyToken,
+        status: 'connected',
+        connected_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+      // Only overwrite app_secret when a new one was actually entered —
+      // otherwise the existing (masked, untouched) value is preserved.
+      if (encryptedAppSecret !== undefined) {
+        updatePayload.app_secret = encryptedAppSecret
+      }
+
       const { error: updateError } = await supabase
         .from('whatsapp_config')
-        .update({
-          phone_number_id,
-          waba_id: waba_id || null,
-          access_token: encryptedAccessToken,
-          verify_token: encryptedVerifyToken,
-          status: 'connected',
-          connected_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
+        .update(updatePayload)
         .eq('user_id', user.id)
 
       if (updateError) {
@@ -201,6 +214,7 @@ export async function POST(request: Request) {
           waba_id: waba_id || null,
           access_token: encryptedAccessToken,
           verify_token: encryptedVerifyToken,
+          app_secret: encryptedAppSecret ?? null,
           status: 'connected',
           connected_at: new Date().toISOString(),
         })

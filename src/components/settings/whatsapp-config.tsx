@@ -53,6 +53,9 @@ export function WhatsAppConfig() {
   const [accessToken, setAccessToken] = useState('');
   const [verifyToken, setVerifyToken] = useState('');
   const [tokenEdited, setTokenEdited] = useState(false);
+  const [appSecret, setAppSecret] = useState('');
+  const [appSecretEdited, setAppSecretEdited] = useState(false);
+  const [showAppSecret, setShowAppSecret] = useState(false);
 
   const webhookUrl =
     typeof window !== 'undefined'
@@ -80,6 +83,10 @@ export function WhatsAppConfig() {
         setAccessToken(MASKED_TOKEN);
         setVerifyToken('');
         setTokenEdited(false);
+        // Mask the app secret if one is stored; empty otherwise so the
+        // placeholder shows. The encrypted value never leaves the server.
+        setAppSecret(data.app_secret ? MASKED_TOKEN : '');
+        setAppSecretEdited(false);
       } else {
         setConfig(null);
         setPhoneNumberId('');
@@ -87,6 +94,8 @@ export function WhatsAppConfig() {
         setAccessToken('');
         setVerifyToken('');
         setTokenEdited(false);
+        setAppSecret('');
+        setAppSecretEdited(false);
       }
 
       // Then verify health via the API (decrypts token + pings Meta)
@@ -152,6 +161,13 @@ export function WhatsAppConfig() {
         waba_id: wabaId.trim() || null,
         verify_token: verifyToken.trim() || null,
       };
+
+      // Only send the app secret when it was actually edited (not the
+      // masked placeholder). The server preserves the stored value when
+      // this is omitted.
+      if (appSecretEdited && appSecret !== MASKED_TOKEN && appSecret.trim()) {
+        payload.app_secret = appSecret.trim();
+      }
 
       if (tokenEdited && accessToken !== MASKED_TOKEN && accessToken.trim()) {
         payload.access_token = accessToken.trim();
@@ -246,6 +262,8 @@ export function WhatsAppConfig() {
       setAccessToken('');
       setVerifyToken('');
       setTokenEdited(false);
+      setAppSecret('');
+      setAppSecretEdited(false);
       setConnectionStatus('disconnected');
       setResetReason(null);
       setStatusMessage('');
@@ -406,6 +424,42 @@ export function WhatsAppConfig() {
                 A custom string you create. Must match the token you set in Meta webhook settings.
               </p>
             </div>
+
+            <div className="space-y-2">
+              <Label className="text-foreground">Meta App Secret</Label>
+              <div className="relative">
+                <Input
+                  type={showAppSecret ? 'text' : 'password'}
+                  placeholder="Enter your Meta app secret"
+                  value={appSecret}
+                  onChange={(e) => {
+                    setAppSecret(e.target.value);
+                    setAppSecretEdited(true);
+                  }}
+                  onFocus={() => {
+                    if (appSecret === MASKED_TOKEN) {
+                      setAppSecret('');
+                      setAppSecretEdited(true);
+                    }
+                  }}
+                  className="bg-muted border-border text-foreground placeholder:text-muted-foreground pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowAppSecret(!showAppSecret)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showAppSecret ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Found in Meta &rarr; App Settings &rarr; Basic &rarr; App Secret. Used to verify
+                that incoming webhooks genuinely came from Meta.
+                {config && !appSecretEdited
+                  ? ' Hidden for security — re-enter to update.'
+                  : ''}
+              </p>
+            </div>
           </CardContent>
         </Card>
 
@@ -553,6 +607,7 @@ export function WhatsAppConfig() {
                     <li>Copy your <strong className="text-foreground">Phone Number ID</strong></li>
                     <li>Copy your <strong className="text-foreground">WhatsApp Business Account ID</strong></li>
                     <li>Generate a <strong className="text-foreground">Permanent Access Token</strong> from Business Settings &gt; System Users</li>
+                    <li>Copy your <strong className="text-foreground">App Secret</strong> from App Settings &gt; Basic</li>
                   </ol>
                 </AccordionContent>
               </AccordionItem>
